@@ -1,0 +1,19 @@
+{
+  "name": "bilibili-online-web",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx serve .",
+    "grab": "node src/grab.js",
+    "grab:schedule": "node src/grab.js --schedule"
+  },
+  "keywords": ["bilibili", "banner", "animation"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "puppeteer": "^24.36.1"
+  }
+}

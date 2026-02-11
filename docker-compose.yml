@@ -1,0 +1,47 @@
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: bilibili-online:latest
+    container_name: bilibili-online-web
+    command: sh -c "cd apps/web && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - assets_volume:/app/apps/web/assets
+      - data_volume:/app/apps/web/data
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - NODE_ENV=production
+
+  grabber:
+    image: bilibili-online:latest
+    container_name: bilibili-online-grabber
+    # Run in schedule mode
+    command: sh -c "cd apps/web && npm run grab:schedule"
+    volumes:
+      - assets_volume:/app/apps/web/assets
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - GRAB_HOUR=${GRAB_HOUR:-6}  # Run at 6 AM
+
+  worker:
+    image: bilibili-online:latest
+    container_name: bilibili-online-worker
+    command: sh -c "cd apps/worker && python3 worker.py"
+    volumes:
+      - data_volume:/data
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - OUTPUT_PATH=/data/data.json
+      - UPDATE_INTERVAL_SEC=${UPDATE_INTERVAL_SEC:-300} # 5 minutes
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY:-6}
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+volumes:
+  assets_volume:
+  data_volume:

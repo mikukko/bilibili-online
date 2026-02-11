@@ -1,0 +1,10 @@
+node_modules
+apps/web/node_modules
+apps/worker/.venv
+apps/worker/__pycache__
+.git
+.gitignore
+.env
+Dockerfile
+docker-compose.yml
+*.log

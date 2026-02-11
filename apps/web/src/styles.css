@@ -1,0 +1,382 @@
+/* ===========================================
+   Global Reset & Base Styles
+   =========================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #fff;
+    color: #333;
+    --padding: 20px;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+img {
+    user-select: none;
+    pointer-events: none;
+}
+
+/* ===========================================
+   Banner Styles
+   =========================================== */
+#app {
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    min-width: 1000px;
+    min-height: 155px;
+    height: 10vw;
+    max-height: 240px;
+}
+
+.header-banner__inner {
+    position: relative;
+    top: 50%;
+    transform: translateY(-20%);
+    z-index: 100;
+    max-width: 1160px;
+    margin: 0 auto;
+}
+
+.logo-img {
+    pointer-events: auto;
+    position: relative;
+    z-index: 100;
+}
+
+.layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ===========================================
+   Container & Layout
+   =========================================== */
+.container {
+    margin-top: 5px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: left;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #00AEEC;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #222222;
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+/* ===========================================
+   Controls & Sorting
+   =========================================== */
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    border-top: 1px solid #e5e9ef;
+    border-bottom: 1px solid #e5e9ef;
+}
+
+.b-head-t {
+    font-size: 18px;
+    color: #222222;
+}
+
+.b-head-desc {
+    font-size: 13px;
+    color: #99a2aa;
+}
+
+.sort-options {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.sort-btn {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.sort-btn:hover,
+.sort-btn.active {
+    background-color: #02afed;
+    color: white;
+    border-color: #02afed;
+}
+
+.search-box {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 250px;
+    margin: 10px 0;
+}
+
+#selectBox>button {
+    margin-right: 1em;
+}
+
+/* ===========================================
+   Video Grid & Cards
+   =========================================== */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 20px;
+}
+
+.video-card {
+    background-color: #fff;
+    border: 1px solid #e5e9ef;
+    border-radius: 4px;
+    overflow: hidden;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+    --cursor: pointer;
+}
+
+.video-card:hover {
+    --transform: translateY(-5px);
+}
+
+.video-card b {
+    margin-right: 4px;
+}
+
+.video-card:hover b {
+    --transform: translateY(-5px);
+    transition: color 0.2s ease;
+    color: #02afed;
+}
+
+.video-thumbnail {
+    position: relative;
+    width: 100%;
+    padding-top: 65%;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.video-thumbnail img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.video-info {
+    padding: 15px;
+}
+
+.video-title {
+    color: #222222;
+    font-size: 12px;
+    --font-weight: bold;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 28px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.video-title:hover {
+    color: rgb(0, 174, 236) !important;
+}
+
+.video-meta {
+    display: flex;
+    align-items: center;
+    color: #99a2aa;
+    font-size: 12px;
+}
+
+.video-meta span {
+    display: flex;
+    align-items: center;
+    width: 90px;
+}
+
+.video-owner {
+    color: #99a2aa;
+    font-size: 12px;
+    transition: color 0.3s;
+    margin-top: 6px;
+}
+
+.video-owner:hover {
+    color: rgb(0, 174, 236) !important;
+}
+
+.online-count {
+    color: #000000;
+    background-color: #e5e9ef;
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3px 8px;
+    --border-radius: 4px;
+    height: 30px;
+    --font-weight: bold;
+}
+
+/* ===========================================
+   Rank Badges
+   =========================================== */
+.rank-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.rank-1,
+.rank-2,
+.rank-3 {
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+}
+
+.rank-1 {
+    background-color: #FFD700;
+    color: #333;
+}
+
+.rank-2 {
+    background-color: #C0C0C0;
+    color: #333;
+}
+
+.rank-3 {
+    background-color: #CD7F32;
+    color: #333;
+}
+
+/* ===========================================
+   Status Messages
+   =========================================== */
+.loading {
+    text-align: center;
+    padding: 50px;
+    font-size: 18px;
+    color: #666;
+}
+
+.error {
+    text-align: center;
+    padding: 50px;
+    font-size: 18px;
+    color: #ff4d4f;
+}
+
+.no-results {
+    text-align: center;
+    padding: 50px;
+    font-size: 18px;
+    color: #666;
+}
+
+/* ===========================================
+   Links & Footer
+   =========================================== */
+
+.update-time {
+    text-align: center;
+    margin-top: 20px;
+    color: #99a2aa;
+    font-size: 14px;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.github-link {
+    margin-top: 10px;
+}
+
+.github-link a {
+    color: black;
+    text-decoration: none;
+    opacity: 0.8;
+}
+
+.github-link a:hover {
+    opacity: 1;
+}
+
+/* ===========================================
+   Responsive Design
+   =========================================== */
+@media (max-width: 768px) {
+    .video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+}
