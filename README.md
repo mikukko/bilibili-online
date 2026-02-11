@@ -2,6 +2,14 @@
 
 B站热门视频在线人数实时监控与 Banner 抓取展示。
 
+## 致谢
+
+本项目参考了以下优秀的开源项目和网站：
+
+- [bilibili-banner](https://github.com/palxiao/bilibili-banner): B站首页 Banner 抓取与展示。
+- [bilibili-online-ranking](https://github.com/nbt0/bilibili-online-ranking): B站在线人数排行榜。
+- [online.xn--10v.link](https://online.xn--10v.link/): 当前在线页面站点。
+
 ## 功能
 
 - **Web 展示**: 展示实时在线人数排名和动态 Banner。
@@ -17,11 +25,23 @@ B站热门视频在线人数实时监控与 Banner 抓取展示。
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
 
+### Tags
+
+| Tag | Architecture | Description |
+| :--- | :--- | :--- |
+| `latest` | x86-64 (amd64) | Default. Standard version for most servers. |
+| `arm64` | ARM64 | For Apple Silicon (M1/M2/M3) and Raspberry Pi. |
+
 ### 快速启动
 
-1. 构建并启动服务：
+1. 下载 docker-compose.yml 文件
    ```bash
-   docker-compose up --build -d
+   # 你可以直接复制本项目中的 docker-compose.yml
+   ```
+
+2. 启动服务：
+   ```bash
+   docker-compose up -d
    ```
 
 2. 访问页面：

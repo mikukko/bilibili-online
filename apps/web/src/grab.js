@@ -1,11 +1,13 @@
 /*
- * @Author: ShawnPhang
- * @Description: 网页抓取 - 支持单次运行和定时调度模式
+ * 网页抓取 - 支持单次运行和定时调度模式
  *
  * 用法:
  *   node src/grab.js              # 单次运行，使用日期作为名称
  *   node src/grab.js myname       # 单次运行，使用 myname 作为名称
  *   node src/grab.js --schedule   # 定时模式，每天自动抓取一次
+ * 
+ * 致谢：
+ *  - 参考 https://github.com/palxiao/bilibili-banner
  */
 import { launch } from "puppeteer";
 import { existsSync, readdirSync, mkdirSync, writeFileSync, readFileSync } from "fs";

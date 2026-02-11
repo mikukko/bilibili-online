@@ -7,7 +7,7 @@ B站热门视频在线人数采集服务
 - 原子写入 JSON 文件供前端读取
 
 致谢：
-- 来自 nbt0/bilibili-online-ranking
+- 参考 https://github.com/nbt0/bilibili-online-ranking
 """
 
 import asyncio
