@@ -99,7 +99,7 @@ class Config:
 def load_config() -> Config:
     """从环境变量加载配置"""
     return Config(
-        update_interval_sec=max(5, _env_int("UPDATE_INTERVAL_SEC", 300)),
+        update_interval_sec=max(5, _env_int("UPDATE_INTERVAL_SEC", 600)),
         output_path=os.getenv("OUTPUT_PATH", "../data/data.json"),
         user_agent=os.getenv(
             "USER_AGENT",
@@ -242,6 +242,16 @@ async def enrich_video(
     if not isinstance(pic, str):
         pic = ""
 
+    # 发布时间 unix timestamp eg: 1770641792
+    pubdate = view_data.get("pubdate")
+    if not isinstance(pubdate, int):
+        pubdate = raw_item.get("pubdate")
+    if not isinstance(pubdate, int):
+        pubdate = 0
+    
+    # 格式化时间
+    pubdate = datetime.fromtimestamp(pubdate).strftime("%Y-%m-%d %H:%M:%S")
+
     # 在线人数 eg: 1000+ 1.7万+
     online_total = None
     # 获取在线人数
@@ -266,7 +276,8 @@ async def enrich_video(
         "online_total": online_total, # 文字转化后的 eg: 1.7万人
         "online_count": online_count, # 数字
         "view": view,
-        "danmaku": danmaku
+        "danmaku": danmaku,
+        "pubdate": pubdate,
     }
 
 

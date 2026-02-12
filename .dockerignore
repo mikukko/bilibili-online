@@ -2,6 +2,7 @@ node_modules
 apps/web/node_modules
 apps/worker/.venv
 apps/worker/__pycache__
+data.json
 .git
 .gitignore
 .env

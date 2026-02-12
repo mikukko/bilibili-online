@@ -11,6 +11,7 @@ body {
     background-color: #fff;
     color: #333;
     --padding: 20px;
+    font-family: PingFang SC, HarmonyOS_Regular, Helvetica Neue, Microsoft YaHei, sans-serif !important;
 }
 
 a {
@@ -179,12 +180,6 @@ h1 {
     margin-right: 4px;
 }
 
-.video-card:hover b {
-    --transform: translateY(-5px);
-    transition: color 0.2s ease;
-    color: #02afed;
-}
-
 .video-thumbnail {
     position: relative;
     width: 100%;
@@ -209,13 +204,14 @@ h1 {
 
 .video-title {
     color: #222222;
-    font-size: 12px;
+    font-size: 14px;
     --font-weight: bold;
     margin-bottom: 10px;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    height: 28px;
+    height: 48px;
+    line-height: 24px;
     cursor: pointer;
     transition: color 0.3s;
 }
@@ -237,28 +233,42 @@ h1 {
     width: 90px;
 }
 
-.video-owner {
-    color: #99a2aa;
+.bili-video-card__info--owner {
+    cursor: pointer;
+    transition: color .2s linear;
+    transition-behavior: normal;
+    transition-duration: 0.2s;
+    transition-timing-function: linear;
+    transition-delay: 0s;
+    transition-property: color;
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    margin-bottom: 15px;
+    /* Add spacing below author */
     font-size: 12px;
-    transition: color 0.3s;
-    margin-top: 6px;
+    color: #99a2aa;
 }
 
-.video-owner:hover {
-    color: rgb(0, 174, 236) !important;
+.bili-video-card__info--owner:hover {
+    color: #00AEEC;
+}
+
+.bili-video-card__info--owner__up {
+    margin-right: 4px;
+    width: 15px;
+    height: 15px;
 }
 
 .online-count {
-    color: #000000;
-    background-color: #e5e9ef;
-    font-size: 12px;
+    color: #333;
+    background-color: #efefef;
+    font-size: 14px;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 3px 8px;
-    --border-radius: 4px;
-    height: 30px;
-    --font-weight: bold;
+    padding: 8px 0;
+    width: 100%;
 }
 
 /* ===========================================

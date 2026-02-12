@@ -37,7 +37,7 @@ services:
     environment:
       - TZ=${TZ:-Asia/Shanghai}
       - OUTPUT_PATH=/data/data.json
-      - UPDATE_INTERVAL_SEC=${UPDATE_INTERVAL_SEC:-300} # 5 minutes
+      - UPDATE_INTERVAL_SEC=${UPDATE_INTERVAL_SEC:-600} # 10 minutes
       - MAX_CONCURRENCY=${MAX_CONCURRENCY:-6}
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

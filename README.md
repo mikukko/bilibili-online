@@ -30,7 +30,7 @@ B站热门视频在线人数实时监控与 Banner 抓取展示。
 | Tag | Architecture | Description |
 | :--- | :--- | :--- |
 | `latest` | x86-64 (amd64) | Default. Standard version for most servers. |
-| `arm64` | ARM64 | For Apple Silicon (M1/M2/M3) and Raspberry Pi. |
+| `arm64` | ARM64 | For Apple Silicon and Raspberry Pi. |
 
 ### 快速启动
 
@@ -61,7 +61,7 @@ B站热门视频在线人数实时监控与 Banner 抓取展示。
 
 - **web**: 前端页面服务，运行在 3000 端口。
 - **grabber**: 每天早上 6:00 (可配置) 自动抓取 B站 Banner。
-- **worker**: 每 5 分钟 (可配置) 更新一次视频在线人数数据。
+- **worker**: 每 10 分钟 (可配置) 更新一次视频在线人数数据。
 
 ### 配置
 
