@@ -1,9 +1,8 @@
-FROM ghcr.io/puppeteer/puppeteer:24.3.0
+FROM node:22-bookworm-slim
 
-USER root
-
-# Install Python and build dependencies
+# Install Python and Chromium runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
     python3 \
     python3-pip \
     python3-venv \
@@ -16,6 +15,8 @@ COPY apps/web/package.json ./apps/web/
 COPY apps/worker/requirements.txt ./apps/worker/
 
 # Install Node.js dependencies
+# Reuse system Chromium to keep image multi-arch compatible.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN cd apps/web && npm install
 
 # Install Python dependencies
@@ -28,6 +29,7 @@ COPY . .
 # Set environment variables
 ENV NODE_ENV=production
 ENV PYTHONPATH=/app/apps/worker
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Expose web port
 EXPOSE 3000

@@ -31,10 +31,10 @@ img {
     position: relative;
     overflow: hidden;
     margin: 0 auto;
+    width: 100%;
+    max-width: 2007px;
     min-width: 1000px;
-    min-height: 155px;
-    height: 10vw;
-    max-height: 240px;
+    height: clamp(155px, 9.37vw, 188px);
 }
 
 .header-banner__inner {
@@ -70,6 +70,25 @@ img {
     margin-top: 5px;
     max-width: 1200px;
     margin: 0 auto;
+    padding-bottom: 45px;
+}
+
+.github-icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #222;
+    line-height: 0;
+    transition: all 0.2s ease;
+}
+
+.github-icon-link:hover {
+    color: #00aeec;
+}
+
+.github-icon-link svg {
+    width: 24px;
+    height: 24px;
 }
 
 header {
@@ -104,9 +123,18 @@ h1 {
     align-items: center;
     margin-top: 20px;
     margin-bottom: 20px;
+    gap: 12px;
     flex-wrap: wrap;
     border-top: 1px solid #e5e9ef;
     border-bottom: 1px solid #e5e9ef;
+}
+
+.controls-meta {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .b-head-t {
@@ -342,8 +370,13 @@ h1 {
    =========================================== */
 
 .update-time {
-    text-align: center;
-    margin-top: 20px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
+    min-height: 40px;
+    white-space: nowrap;
     color: #99a2aa;
     font-size: 14px;
 }
@@ -384,6 +417,16 @@ h1 {
     .controls {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .controls-meta {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
+
+    .update-time {
+        justify-content: flex-end;
     }
 
     .search-box {

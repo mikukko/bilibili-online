@@ -3,6 +3,7 @@
 // ========== Banner 逻辑 ==========
 let allImagesData = [];
 let layers = [];
+let bannerBaseWidth = 0;
 
 // 动态加载最新的 banner 数据
 async function loadLatestBanner() {
@@ -59,6 +60,9 @@ async function initBanner() {
 function initBannerItems() {
   const app = document.querySelector("#app");
   if (!app) return;
+
+  bannerBaseWidth = Number(allImagesData[0]?.width) || 0;
+  app.dataset.bannerBaseWidth = String(bannerBaseWidth);
 
   // 保留 logo 等固定元素，只移除 .layer 元素
   const existingLayers = app.querySelectorAll('.layer');
@@ -122,9 +126,12 @@ function bindBannerEvents() {
 
   app.addEventListener("mousemove", (e) => {
     const rect = app.getBoundingClientRect();
+    const baseWidth = Number(app.dataset.bannerBaseWidth) || bannerBaseWidth || rect.width;
     const centerX = rect.width / 2;
     const mouseX = e.clientX - rect.left;
-    const offsetX = (mouseX - centerX);
+    const rawOffsetX = mouseX - centerX;
+    const maxOffsetX = Math.max((baseWidth - rect.width) / 2, 0);
+    const offsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, rawOffsetX));
 
     // 动态查询 layers，避免初始化时机问题
     const currentLayers = document.querySelectorAll("#app .layer");
@@ -176,7 +183,7 @@ async function loadVideoData() {
     // 更新时间
     const updateTimeEl = document.getElementById('update-time');
     if (updateTimeEl && data.updated_at) {
-      updateTimeEl.textContent = `数据更新时间: ${data.updated_at}`;
+      updateTimeEl.textContent = `数据更新时间: ${normalizeUpdateTime(data.updated_at)}`;
     }
 
     renderVideoGrid();
@@ -224,6 +231,11 @@ function formatDate(dateStr) {
     console.error('Date parsing error', e);
     return '';
   }
+}
+
+function normalizeUpdateTime(updateAt) {
+  if (typeof updateAt !== 'string') return '';
+  return updateAt.replace(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}$/, '$1:00');
 }
 
 function renderVideoGrid() {

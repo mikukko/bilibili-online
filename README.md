@@ -29,8 +29,37 @@ B站热门视频在线人数实时监控与 Banner 抓取展示。
 
 | Tag | Architecture | Description |
 | :--- | :--- | :--- |
-| `latest` | x86-64 (amd64) | Default. Standard version for most servers. |
-| `arm64` | ARM64 | For Apple Silicon and Raspberry Pi. |
+| `latest` | Multi-Arch (`amd64` + `arm64`) | 默认推荐。会根据宿主机架构自动拉取对应镜像。 |
+| `arm64` | ARM64 | 显式锁定 ARM64（Apple Silicon / Raspberry Pi）时使用。 |
+
+> 说明：从现在开始，`latest` 已包含 `linux/amd64` 与 `linux/arm64` 两个架构。
+> 一般无需手动区分，直接使用 `latest` 即可。
+
+### 镜像发布（维护者）
+
+如需重新发布镜像，建议使用以下命令：
+
+```bash
+# 1) 发布独立 ARM64 镜像（可选，但建议保留）
+docker --context default buildx build \
+  --builder default \
+  --platform linux/arm64 \
+  -t mikukko/bilibili-online:arm64 \
+  --push .
+
+# 2) 让 latest 成为 amd64 + arm64 多架构清单
+docker buildx imagetools create \
+  -t mikukko/bilibili-online:latest \
+  mikukko/bilibili-online@sha256:<amd64-manifest-digest> \
+  mikukko/bilibili-online@sha256:<arm64-manifest-digest>
+```
+
+发布后可用以下命令检查：
+
+```bash
+docker buildx imagetools inspect mikukko/bilibili-online:latest
+docker buildx imagetools inspect mikukko/bilibili-online:arm64
+```
 
 ### 快速启动
 

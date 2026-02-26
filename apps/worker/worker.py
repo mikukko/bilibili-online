@@ -40,10 +40,12 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
-def _now_formatted() -> str:
+def _now_formatted(*, zero_seconds: bool = False) -> str:
     """获取当前 UTC+8 时间的格式化字符串"""
     utc_now = datetime.now(timezone.utc)
     beijing_time = utc_now.astimezone(timezone(timedelta(hours=8)))
+    if zero_seconds:
+        beijing_time = beijing_time.replace(second=0, microsecond=0)
     return beijing_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -333,7 +335,7 @@ async def build_payload(cfg: Config) -> dict[str, Any]:
             return (0 if o >= 0 else 1, -(o if o >= 0 else 0))
 
         enriched.sort(key=sort_key)
-        return {"updated_at": _now_formatted(), "items": enriched}
+        return {"updated_at": _now_formatted(zero_seconds=True), "items": enriched}
 
 
 async def run_once(cfg: Config) -> None:

@@ -1,9 +1,7 @@
 services:
   web:
-    build: 
-      context: .
-      dockerfile: Dockerfile
     image: mikukko/bilibili-online:latest
+    pull_policy: always
     container_name: bilibili-online-web
     command: sh -c "cd apps/web && npm run dev"
     ports:
@@ -18,6 +16,7 @@ services:
 
   grabber:
     image: mikukko/bilibili-online:latest
+    pull_policy: always
     container_name: bilibili-online-grabber
     # Run in schedule mode
     command: sh -c "cd apps/web && npm run grab:schedule"
@@ -30,6 +29,7 @@ services:
 
   worker:
     image: mikukko/bilibili-online:latest
+    pull_policy: always
     container_name: bilibili-online-worker
     command: sh -c "cd apps/worker && python3 worker.py"
     volumes:
