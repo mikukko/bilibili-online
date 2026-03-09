@@ -3,9 +3,9 @@
     overflow: hidden;
     margin: 0 auto;
     width: 100%;
-    max-width: 2007px;
     min-width: 1000px;
-    height: clamp(155px, 9.37vw, 188px);
+    height: calc(100vw * 188 / 2007);
+    min-height: 155px;
 }
 
 .layer {

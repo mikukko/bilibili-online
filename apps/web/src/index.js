@@ -4,6 +4,7 @@
 let allImagesData = [];
 let layers = [];
 let bannerBaseWidth = 0;
+let bannerBaseHeight = 0;
 
 // 动态加载最新的 banner 数据
 async function loadLatestBanner() {
@@ -62,7 +63,9 @@ function initBannerItems() {
   if (!app) return;
 
   bannerBaseWidth = Number(allImagesData[0]?.width) || 0;
+  bannerBaseHeight = Number(allImagesData[0]?.height) || 0;
   app.dataset.bannerBaseWidth = String(bannerBaseWidth);
+  app.dataset.bannerBaseHeight = String(bannerBaseHeight);
 
   // 保留 logo 等固定元素，只移除 .layer 元素
   const existingLayers = app.querySelectorAll('.layer');
@@ -118,6 +121,37 @@ function initBannerItems() {
   });
 
   layers = document.querySelectorAll(".layer");
+  applyLayerTransforms(0);
+}
+
+function applyLayerTransforms(offsetX = 0) {
+  const app = document.querySelector("#app");
+  if (!app) return;
+
+  const rect = app.getBoundingClientRect();
+  const baseWidth = Number(app.dataset.bannerBaseWidth) || bannerBaseWidth || rect.width;
+  const baseHeight = Number(app.dataset.bannerBaseHeight) || bannerBaseHeight || rect.height;
+  const scaleRatio = Math.max(rect.width / baseWidth, rect.height / baseHeight);
+
+  const currentLayers = app.querySelectorAll(".layer");
+  currentLayers.forEach((layer) => {
+    const scaleX = parseFloat(layer.dataset.scaleX) || 1;
+    const skewX = parseFloat(layer.dataset.skewX) || 0;
+    const skewY = parseFloat(layer.dataset.skewY) || 0;
+    const scaleY = parseFloat(layer.dataset.scaleY) || 1;
+    const baseX = parseFloat(layer.dataset.translateX) || 0;
+    const baseY = parseFloat(layer.dataset.translateY) || 0;
+    const parallaxA = parseFloat(layer.dataset.a) || 0;
+
+    const newX = baseX * scaleRatio + offsetX * parallaxA;
+    const newY = baseY * scaleRatio;
+    const newScaleX = scaleX * scaleRatio;
+    const newSkewX = skewX * scaleRatio;
+    const newSkewY = skewY * scaleRatio;
+    const newScaleY = scaleY * scaleRatio;
+
+    layer.style.transform = `matrix(${newScaleX}, ${newSkewX}, ${newSkewY}, ${newScaleY}, ${newX}, ${newY})`;
+  });
 }
 
 function bindBannerEvents() {
@@ -127,43 +161,24 @@ function bindBannerEvents() {
   app.addEventListener("mousemove", (e) => {
     const rect = app.getBoundingClientRect();
     const baseWidth = Number(app.dataset.bannerBaseWidth) || bannerBaseWidth || rect.width;
+    const baseHeight = Number(app.dataset.bannerBaseHeight) || bannerBaseHeight || rect.height;
+    const scaleRatio = Math.max(rect.width / baseWidth, rect.height / baseHeight);
     const centerX = rect.width / 2;
     const mouseX = e.clientX - rect.left;
     const rawOffsetX = mouseX - centerX;
-    const maxOffsetX = Math.max((baseWidth - rect.width) / 2, 0);
+    const scaledWidth = baseWidth * scaleRatio;
+    const maxOffsetX = Math.max((scaledWidth - rect.width) / 2, 0);
     const offsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, rawOffsetX));
 
-    // 动态查询 layers，避免初始化时机问题
-    const currentLayers = document.querySelectorAll("#app .layer");
-
-    currentLayers.forEach((layer) => {
-      const scaleX = parseFloat(layer.dataset.scaleX) || 1;
-      const skewX = parseFloat(layer.dataset.skewX) || 0;
-      const skewY = parseFloat(layer.dataset.skewY) || 0;
-      const scaleY = parseFloat(layer.dataset.scaleY) || 1;
-      const baseX = parseFloat(layer.dataset.translateX) || 0;
-      const baseY = parseFloat(layer.dataset.translateY) || 0;
-      const parallaxA = parseFloat(layer.dataset.a) || 0; // 视差系数
-
-      // 使用数据中的 a 值作为视差强度
-      const newX = baseX + offsetX * parallaxA;
-
-      layer.style.transform = `matrix(${scaleX}, ${skewX}, ${skewY}, ${scaleY}, ${newX}, ${baseY})`;
-    });
+    applyLayerTransforms(offsetX);
   });
 
   app.addEventListener("mouseleave", () => {
-    const currentLayers = document.querySelectorAll("#app .layer");
+    applyLayerTransforms(0);
+  });
 
-    currentLayers.forEach((layer) => {
-      const scaleX = parseFloat(layer.dataset.scaleX) || 1;
-      const skewX = parseFloat(layer.dataset.skewX) || 0;
-      const skewY = parseFloat(layer.dataset.skewY) || 0;
-      const scaleY = parseFloat(layer.dataset.scaleY) || 1;
-      const baseX = parseFloat(layer.dataset.translateX) || 0;
-      const baseY = parseFloat(layer.dataset.translateY) || 0;
-      layer.style.transform = `matrix(${scaleX}, ${skewX}, ${skewY}, ${scaleY}, ${baseX}, ${baseY})`;
-    });
+  window.addEventListener("resize", () => {
+    applyLayerTransforms(0);
   });
 }
 
