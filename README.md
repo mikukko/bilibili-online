@@ -13,8 +13,13 @@ B站热门视频在线人数实时监控与 Banner 抓取展示。
 ## 功能
 
 - **Web 展示**: 展示实时在线人数排名和动态 Banner。
+- **Banner 缓存**: 页面优先从浏览器本地缓存恢复上次 Banner，再通过 `apps/web/assets/latest.json` 校验是否有新素材，减少刷新闪烁。
 - **数据采集 (Worker)**: 定时抓取 B站热门视频的在线人数。
 - **Banner 抓取 (Grabber)**: 每日定时抓取 B站首页动态 Banner。
+
+## 项目说明文档
+
+- 项目结构、数据流和运行方式见 [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)
 
 ## Docker 部署 (推荐)
 

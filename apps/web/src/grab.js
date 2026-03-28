@@ -55,13 +55,40 @@ function loadExistingManifests() {
     if (existsSync(manifestPath)) {
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-        manifests.push(manifest);
+        manifests.push({ ...manifest, folder });
       } catch (e) {
         // 忽略无效的 manifest
       }
     }
   }
   return manifests;
+}
+
+function getLatestManifest(manifests) {
+  if (!Array.isArray(manifests) || manifests.length === 0) return null;
+
+  return [...manifests].sort((a, b) => {
+    const left = String(b.date || b.folder || '');
+    const right = String(a.date || a.folder || '');
+    return left.localeCompare(right);
+  })[0];
+}
+
+function writeLatestBannerMeta(manifest) {
+  const folder = manifest?.folder || manifest?.date;
+  if (!folder) return;
+
+  const latestMeta = {
+    folder,
+    date: manifest?.date || folder,
+    name: manifest?.name || folder,
+    dataFile: `./assets/${folder}/data.json`,
+    manifestFile: `./assets/${folder}/manifest.json`,
+    generatedAt: new Date().toISOString()
+  };
+
+  writeFileSync(join(assetsPath, 'latest.json'), JSON.stringify(latestMeta, null, 2));
+  console.log(`✅ latest.json 已更新 -> ${folder}`);
 }
 
 // 检查是否与已有数据重复
@@ -203,6 +230,7 @@ async function grabBanner(bannerName) {
     const duplicateManifest = isDuplicate(fileHashes, existingManifests);
     if (duplicateManifest) {
       console.log(`⚠️  检测到重复 banner! 与 ${duplicateManifest.date} (${duplicateManifest.name}) 相同`);
+      writeLatestBannerMeta(duplicateManifest);
       await browser.close();
       console.log('✅ 跳过重复 banner，未写入任何文件');
       return true; // 重复不算失败
@@ -253,6 +281,7 @@ async function grabBanner(bannerName) {
     };
     writeFileSync(join(folderPath, 'manifest.json'), JSON.stringify(manifest, null, 2));
     console.log('✅ manifest.json 已生成');
+    writeLatestBannerMeta({ ...manifest, folder: date });
 
   } catch (error) {
     console.error("Error:", error);
@@ -271,6 +300,11 @@ async function grabBanner(bannerName) {
  */
 async function scheduleMode() {
   console.log(`[scheduler] 定时模式启动，每天 ${GRAB_HOUR}:00 抓取 banner`);
+
+  const latestManifest = getLatestManifest(loadExistingManifests());
+  if (latestManifest) {
+    writeLatestBannerMeta(latestManifest);
+  }
 
   // 启动时先执行一次
   const todayDate = getDateString();

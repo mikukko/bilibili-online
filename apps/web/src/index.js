@@ -5,12 +5,79 @@ let allImagesData = [];
 let layers = [];
 let bannerBaseWidth = 0;
 let bannerBaseHeight = 0;
+let currentBannerFolder = "";
+let currentBannerSignature = "";
+let bannerEventsBound = false;
 
-// 动态加载最新的 banner 数据
-async function loadLatestBanner() {
+const BANNER_CACHE_KEY = "bilibili-online-banner-cache-v1";
+
+function isValidBannerData(data) {
+  return Array.isArray(data) && data.length > 0 && data.every((item) => item && typeof item.src === "string");
+}
+
+function getBannerSignature(folder, bannerData) {
+  const firstSrc = bannerData[0]?.src || "";
+  return `${folder}:${bannerData.length}:${firstSrc}`;
+}
+
+function loadBannerCache() {
+  try {
+    const raw = localStorage.getItem(BANNER_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.folder !== "string" || !isValidBannerData(parsed.data)) {
+      return null;
+    }
+
+    return {
+      folder: parsed.folder,
+      data: parsed.data
+    };
+  } catch (error) {
+    console.warn("读取 banner 本地缓存失败:", error);
+    return null;
+  }
+}
+
+function saveBannerCache(folder, data) {
+  try {
+    localStorage.setItem(BANNER_CACHE_KEY, JSON.stringify({
+      folder,
+      data,
+      cachedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.warn("写入 banner 本地缓存失败:", error);
+  }
+}
+
+async function fetchLatestBannerMeta() {
+  try {
+    const response = await fetch("./assets/latest.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`latest.json 状态异常: ${response.status}`);
+    }
+
+    const latest = await response.json();
+    if (!latest || typeof latest.folder !== "string" || !latest.folder) {
+      throw new Error("latest.json 缺少 folder 字段");
+    }
+
+    return {
+      folder: latest.folder,
+      dataFile: typeof latest.dataFile === "string" && latest.dataFile ? latest.dataFile : `./assets/${latest.folder}/data.json`
+    };
+  } catch (error) {
+    console.warn("读取 assets/latest.json 失败，回退到目录扫描:", error);
+    return discoverLatestBannerMeta();
+  }
+}
+
+async function discoverLatestBannerMeta() {
   try {
     // 获取 assets 目录列表
-    const response = await fetch('./assets/');
+    const response = await fetch("./assets/");
     let html = await response.text();
 
     // serve 会将 / 编码为 &#47;，先解码 HTML 实体
@@ -33,29 +100,91 @@ async function loadLatestBanner() {
     folders.sort((a, b) => b.localeCompare(a));
     const latestFolder = folders[0];
 
-    // 加载最新 banner 的 data.json
-    const dataResponse = await fetch(`./assets/${latestFolder}/data.json`);
-    if (!dataResponse.ok) throw new Error('无法加载 banner 数据');
-
-    const bannerData = await dataResponse.json();
-    console.log(`已加载最新 banner: ${latestFolder}`);
-    return bannerData;
+    return {
+      folder: latestFolder,
+      dataFile: `./assets/${latestFolder}/data.json`
+    };
   } catch (error) {
-    console.error('加载 banner 失败:', error);
+    console.error("探测最新 banner 失败:", error);
     return null;
   }
 }
 
+async function fetchBannerData(folder, dataFile) {
+  const response = await fetch(dataFile);
+  if (!response.ok) {
+    throw new Error(`无法加载 banner 数据: ${folder}`);
+  }
+
+  const bannerData = await response.json();
+  if (!isValidBannerData(bannerData)) {
+    throw new Error(`banner 数据无效: ${folder}`);
+  }
+
+  console.log(`已加载最新 banner: ${folder}`);
+  return bannerData;
+}
+
+function renderBanner(bannerData, folder) {
+  if (!isValidBannerData(bannerData) || !folder) return false;
+
+  const signature = getBannerSignature(folder, bannerData);
+  if (signature === currentBannerSignature) {
+    return true;
+  }
+
+  allImagesData = bannerData;
+  currentBannerFolder = folder;
+  currentBannerSignature = signature;
+
+  const app = document.querySelector("#app");
+  if (app) {
+    app.dataset.bannerFolder = folder;
+  }
+
+  initBannerItems();
+  bindBannerEvents();
+  return true;
+}
+
+// 动态加载最新的 banner 数据
+async function loadLatestBanner() {
+  const cachedBanner = loadBannerCache();
+  if (cachedBanner) {
+    renderBanner(cachedBanner.data, cachedBanner.folder);
+    console.log(`已使用本地缓存 banner: ${cachedBanner.folder}`);
+  }
+
+  const latestMeta = await fetchLatestBannerMeta();
+  if (!latestMeta) {
+    return cachedBanner;
+  }
+
+  if (cachedBanner && cachedBanner.folder === latestMeta.folder) {
+    return cachedBanner;
+  }
+
+  try {
+    const bannerData = await fetchBannerData(latestMeta.folder, latestMeta.dataFile);
+    saveBannerCache(latestMeta.folder, bannerData);
+    return {
+      folder: latestMeta.folder,
+      data: bannerData
+    };
+  } catch (error) {
+    console.error("加载 banner 失败:", error);
+    return cachedBanner;
+  }
+}
+
 async function initBanner() {
-  const bannerData = await loadLatestBanner();
-  if (!bannerData || bannerData.length === 0) {
+  const latestBanner = await loadLatestBanner();
+  if (!latestBanner || !isValidBannerData(latestBanner.data)) {
     console.warn('没有可用的 banner 数据');
     return;
   }
 
-  allImagesData = bannerData;
-  initBannerItems();
-  bindBannerEvents();
+  renderBanner(latestBanner.data, latestBanner.folder);
 }
 
 function initBannerItems() {
@@ -156,7 +285,8 @@ function applyLayerTransforms(offsetX = 0) {
 
 function bindBannerEvents() {
   const app = document.querySelector("#app");
-  if (!app) return;
+  if (!app || bannerEventsBound) return;
+  bannerEventsBound = true;
 
   app.addEventListener("mousemove", (e) => {
     const rect = app.getBoundingClientRect();
