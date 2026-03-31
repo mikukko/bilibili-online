@@ -17,10 +17,6 @@ B站热门视频在线人数实时监控与 Banner 抓取展示。
 - **数据采集 (Worker)**: 定时抓取 B站热门视频的在线人数。
 - **Banner 抓取 (Grabber)**: 每日定时抓取 B站首页动态 Banner。
 
-## 项目说明文档
-
-- 项目结构、数据流和运行方式见 [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)
-
 ## Docker 部署 (推荐)
 
 本项目支持 Docker 部署，且支持 ARM (Apple Silicon) 和 x86 架构。
