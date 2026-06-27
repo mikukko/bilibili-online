@@ -5,14 +5,17 @@
  *   node src/grab.js              # 单次运行，使用日期作为名称
  *   node src/grab.js myname       # 单次运行，使用 myname 作为名称
  *   node src/grab.js --schedule   # 定时模式，每天自动抓取一次
- * 
+ *
+ * 环境变量:
+ *   GRAB_HOUR        每天抓取时间（小时），默认 6
+ *   RETENTION_DAYS   保留最近多少天的 banner 数据，默认 30
+ *
  * 致谢：
  *  - 参考 https://github.com/palxiao/bilibili-banner
  */
 import { launch } from "puppeteer";
-import { existsSync, readdirSync, mkdirSync, writeFileSync, readFileSync } from "fs";
+import { existsSync, readdirSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve as _resolve, dirname } from "path";
-import { createHash } from "crypto";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +28,9 @@ const isScheduleMode = args.includes('--schedule');
 // 每天抓取的时间（小时），默认早上 6 点
 const GRAB_HOUR = parseInt(process.env.GRAB_HOUR || '6', 10);
 
+// 保留最近多少天的 banner 数据，默认 30 天
+const RETENTION_DAYS = parseInt(process.env.RETENTION_DAYS || '30', 10);
+
 // 获取今天的日期字符串
 function getDateString() {
   const today = new Date();
@@ -35,44 +41,6 @@ function getDateString() {
 }
 
 const assetsPath = _resolve(__dirname, "../assets");
-
-// 生成文件 hash
-function generateHash(data) {
-  return createHash('md5').update(data).digest('hex');
-}
-
-// 加载已有的 manifest 文件用于对比
-function loadExistingManifests() {
-  const manifests = [];
-  if (!existsSync(assetsPath)) return manifests;
-
-  const folders = readdirSync(assetsPath, { withFileTypes: true })
-    .filter(d => d.isDirectory())
-    .map(d => d.name);
-
-  for (const folder of folders) {
-    const manifestPath = join(assetsPath, folder, 'manifest.json');
-    if (existsSync(manifestPath)) {
-      try {
-        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-        manifests.push({ ...manifest, folder });
-      } catch (e) {
-        // 忽略无效的 manifest
-      }
-    }
-  }
-  return manifests;
-}
-
-function getLatestManifest(manifests) {
-  if (!Array.isArray(manifests) || manifests.length === 0) return null;
-
-  return [...manifests].sort((a, b) => {
-    const left = String(b.date || b.folder || '');
-    const right = String(a.date || a.folder || '');
-    return left.localeCompare(right);
-  })[0];
-}
 
 function writeLatestBannerMeta(manifest) {
   const folder = manifest?.folder || manifest?.date;
@@ -91,19 +59,79 @@ function writeLatestBannerMeta(manifest) {
   console.log(`✅ latest.json 已更新 -> ${folder}`);
 }
 
-// 检查是否与已有数据重复
-function isDuplicate(newHashes, existingManifests) {
-  for (const manifest of existingManifests) {
-    if (!manifest.hashes || manifest.hashes.length !== newHashes.length) continue;
+// 清理超过保留天数的旧 banner 文件夹
+function cleanupOldFolders() {
+  if (!existsSync(assetsPath)) return;
 
-    // 比较所有 hash 是否相同
-    const existingSet = new Set(manifest.hashes);
-    const allMatch = newHashes.every(h => existingSet.has(h));
-    if (allMatch) {
-      return manifest;
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const cutoffDate = cutoff.getFullYear() + "-" +
+    String(cutoff.getMonth() + 1).padStart(2, '0') + "-" +
+    String(cutoff.getDate()).padStart(2, '0');
+
+  const folders = readdirSync(assetsPath, { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(d.name))
+    .map(d => d.name);
+
+  let cleaned = 0;
+  for (const folder of folders) {
+    if (folder < cutoffDate) {
+      try {
+        rmSync(join(assetsPath, folder), { recursive: true, force: true });
+        cleaned++;
+      } catch (e) {
+        console.warn(`清理旧文件夹失败: ${folder}`, e.message);
+      }
     }
   }
-  return null;
+
+  if (cleaned > 0) {
+    console.log(`🧹 已清理 ${cleaned} 个超过 ${RETENTION_DAYS} 天的旧文件夹`);
+
+    // 检查 latest.json 是否指向已删除的文件夹，如果是则更新
+    updateLatestJsonIfNeeded();
+  }
+}
+
+// 更新 latest.json，确保它指向一个有效的文件夹
+function updateLatestJsonIfNeeded() {
+  const latestPath = join(assetsPath, 'latest.json');
+  if (!existsSync(latestPath)) return;
+
+  try {
+    const latest = JSON.parse(readFileSync(latestPath, 'utf8'));
+    const latestFolder = latest?.folder;
+
+    // 如果 latest.json 指向的文件夹不存在，需要更新
+    if (latestFolder && !existsSync(join(assetsPath, latestFolder))) {
+      console.log(`⚠️  latest.json 指向的文件夹 ${latestFolder} 已被删除，正在更新...`);
+
+      // 查找最新的有效文件夹
+      const remainingFolders = readdirSync(assetsPath, { withFileTypes: true })
+        .filter(d => d.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(d.name))
+        .map(d => d.name)
+        .sort((a, b) => b.localeCompare(a)); // 按日期降序排序
+
+      if (remainingFolders.length > 0) {
+        const newestFolder = remainingFolders[0];
+        const manifestPath = join(assetsPath, newestFolder, 'manifest.json');
+
+        if (existsSync(manifestPath)) {
+          const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+          writeLatestBannerMeta({ ...manifest, folder: newestFolder });
+        } else {
+          // 没有 manifest.json，直接写入文件夹信息
+          writeLatestBannerMeta({ folder: newestFolder, date: newestFolder, name: newestFolder });
+        }
+      } else {
+        // 没有剩余文件夹，删除 latest.json
+        rmSync(latestPath, { force: true });
+        console.log('⚠️  没有剩余的 banner 文件夹，已删除 latest.json');
+      }
+    }
+  } catch (e) {
+    console.warn('更新 latest.json 失败:', e.message);
+  }
 }
 
 /**
@@ -116,10 +144,6 @@ async function grabBanner(bannerName) {
   const folderPath = join(assetsPath, date);
   const memoryCache = [];
   const data = [];
-  const fileHashes = [];
-
-  const existingManifests = loadExistingManifests();
-  console.log(`已加载 ${existingManifests.length} 个已有 banner manifest`);
 
   const browser = await launch({
     headless: 'new',
@@ -160,8 +184,6 @@ async function grabBanner(bannerName) {
     }, item.src);
 
     const fileData = Buffer.from(content.buffer);
-    const hash = generateHash(fileData);
-    fileHashes.push(hash);
 
     // 存储到内存缓存，而不是立即写入磁盘
     memoryCache.push({
@@ -226,18 +248,6 @@ async function grabBanner(bannerName) {
       await downloadToMemory(layerFirstChild);
     }
 
-    // 检查是否与已有 banner 重复（在写入磁盘前检查）
-    const duplicateManifest = isDuplicate(fileHashes, existingManifests);
-    if (duplicateManifest) {
-      console.log(`⚠️  检测到重复 banner! 与 ${duplicateManifest.date} (${duplicateManifest.name}) 相同`);
-      writeLatestBannerMeta(duplicateManifest);
-      await browser.close();
-      console.log('✅ 跳过重复 banner，未写入任何文件');
-      return true; // 重复不算失败
-    }
-
-    console.log('✅ 检测通过，banner 不重复');
-
     // 完成后自动偏移 banner 计算视差系数
     let element = await page.$('.animated-banner')
     let { x, y } = await element.boundingBox()
@@ -256,7 +266,7 @@ async function grabBanner(bannerName) {
       data[i].a = (skew - data[i].transform[4]) / 1000
     }
 
-    // 确认不重复后，创建文件夹并写入磁盘
+    // 写入今天的文件夹
     console.log('正在写入本地文件...');
 
     if (!existsSync(folderPath)) {
@@ -271,17 +281,19 @@ async function grabBanner(bannerName) {
     // 写入 data.json
     writeFileSync(join(folderPath, 'data.json'), JSON.stringify(data, null, 2));
 
-    // 写入 manifest.json (包含 hash 信息)
+    // 写入 manifest.json
     const manifest = {
       name: bannerName,
       date: date,
       createdAt: new Date().toISOString(),
-      fileCount: data.length,
-      hashes: fileHashes
+      fileCount: data.length
     };
     writeFileSync(join(folderPath, 'manifest.json'), JSON.stringify(manifest, null, 2));
     console.log('✅ manifest.json 已生成');
     writeLatestBannerMeta({ ...manifest, folder: date });
+
+    // 清理超过保留天数的旧文件夹
+    cleanupOldFolders();
 
   } catch (error) {
     console.error("Error:", error);
@@ -299,14 +311,9 @@ async function grabBanner(bannerName) {
  * 定时调度模式 — 每天指定时间抓取一次
  */
 async function scheduleMode() {
-  console.log(`[scheduler] 定时模式启动，每天 ${GRAB_HOUR}:00 抓取 banner`);
+  console.log(`[scheduler] 定时模式启动，每天 ${GRAB_HOUR}:00 抓取 banner，保留 ${RETENTION_DAYS} 天`);
 
-  const latestManifest = getLatestManifest(loadExistingManifests());
-  if (latestManifest) {
-    writeLatestBannerMeta(latestManifest);
-  }
-
-  // 启动时先执行一次
+  // 启动时先执行一次（如果今天还没有数据）
   const todayDate = getDateString();
   const todayFolder = join(assetsPath, todayDate);
   if (!existsSync(join(todayFolder, 'data.json'))) {
