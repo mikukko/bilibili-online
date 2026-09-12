@@ -343,10 +343,13 @@ async function loadVideoData() {
 }
 
 function formatNumber(num) {
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万';
+  if (num === null || num === undefined || num === '') return '-';
+  const value = Number(num);
+  if (!Number.isFinite(value)) return '-';
+  if (value >= 10000) {
+    return (value / 10000).toFixed(1) + '万';
   }
-  return num.toString();
+  return value.toString();
 }
 
 function formatDate(dateStr) {
@@ -392,19 +395,21 @@ function renderVideoGrid() {
   let filtered = videoData.filter(item => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    return item.title.toLowerCase().includes(query) ||
-      item.owner.name.toLowerCase().includes(query);
+    const title = typeof item.title === 'string' ? item.title : '';
+    const ownerName = typeof item.owner?.name === 'string' ? item.owner.name : '';
+    return title.toLowerCase().includes(query) ||
+      ownerName.toLowerCase().includes(query);
   });
 
   // 排序
   filtered.sort((a, b) => {
     switch (currentSort) {
       case 'count':
-        return b.online_count - a.online_count;
+        return (Number(b.online_count) || -1) - (Number(a.online_count) || -1);
       case 'view':
-        return b.view - a.view;
+        return (Number(b.view) || -1) - (Number(a.view) || -1);
       case 'danmu':
-        return b.danmaku - a.danmaku;
+        return (Number(b.danmaku) || -1) - (Number(a.danmaku) || -1);
       default:
         return 0;
     }
@@ -421,6 +426,9 @@ function renderVideoGrid() {
     const dateStr = formatDate(item.pubdate);
     const videoUrl = `https://www.bilibili.com/video/${item.bvid}`;
     const ownerUrl = `https://space.bilibili.com/${item.owner.mid}`;
+    const onlineText = typeof item.online_total === 'string' && item.online_total
+      ? `<b style="font-size: 14px; margin-right: 2px;">${item.online_total}</b>人在看`
+      : '在线人数暂不可用';
 
     return `
       <div class="video-card" data-video-url="${videoUrl}">
@@ -444,7 +452,7 @@ function renderVideoGrid() {
              <span class="video-date">${dateStr}</span>
           </div>
           <div class="online-count">
-              <b style="font-size: 14px; margin-right: 2px;">${item.online_total}</b>人在看
+              ${onlineText}
           </div>
         </div>
       </div>

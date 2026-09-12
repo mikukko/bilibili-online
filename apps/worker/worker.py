@@ -212,14 +212,26 @@ async def enrich_video(
     if not isinstance(bvid, str) or not bvid:
         raise RuntimeError("missing bvid")
 
-    # 获取视频详情（包含 cid）
-    async with sem:
-        view_raw = await _get_json_with_retry(
-            client, VIEW_API, params={"bvid": bvid}, limiter=limiter
-        )
-
-    view_data = (view_raw.get("data") or {}) if isinstance(view_raw, dict) else {}
-    cid = _safe_int(view_data.get("cid"))
+    # 热门接口已经包含渲染卡片所需的全部字段。优先直接使用它，避免为每个
+    # 视频额外请求详情接口；后者一旦被限流，过去会导致整条视频被丢弃。
+    view_data: dict[str, Any] = {}
+    cid = _safe_int(raw_item.get("cid"))
+    if not cid:
+        try:
+            async with sem:
+                view_raw = await _get_json_with_retry(
+                    client, VIEW_API, params={"bvid": bvid}, limiter=limiter
+                )
+            data = view_raw.get("data")
+            if isinstance(data, dict):
+                view_data = data
+                cid = _safe_int(view_data.get("cid"))
+        except Exception as e:
+            print(
+                f"[worker] view lookup failed, keeping popular data: "
+                f"bvid={bvid} error={e}",
+                file=sys.stderr,
+            )
 
     # 标题
     title = raw_item.get("title") if isinstance(raw_item.get("title"), str) else view_data.get("title")
@@ -260,15 +272,32 @@ async def enrich_video(
     online_count = None
 
     if cid:
-        async with sem:
-            online_raw = await _get_json_with_retry(
-                client, ONLINE_API, params={"bvid": bvid, "cid": cid}, limiter=limiter
+        try:
+            async with sem:
+                online_raw = await _get_json_with_retry(
+                    client,
+                    ONLINE_API,
+                    params={"bvid": bvid, "cid": cid},
+                    limiter=limiter,
+                )
+            if online_raw.get("code") == 0:
+                d = online_raw.get("data") or {}
+                if isinstance(d, dict):
+                    online_total = d.get("total")
+                    online_count = _safe_int(d.get("count"))
+            else:
+                print(
+                    f"[worker] online api error, keeping video: "
+                    f"bvid={bvid} code={online_raw.get('code')} "
+                    f"message={online_raw.get('message')}",
+                    file=sys.stderr,
+                )
+        except Exception as e:
+            print(
+                f"[worker] online lookup failed, keeping video: "
+                f"bvid={bvid} cid={cid} error={e}",
+                file=sys.stderr,
             )
-        if online_raw.get("code") == 0:
-            d = online_raw.get("data") or {}
-            if isinstance(d, dict):
-                online_total = d.get("total")
-                online_count = _safe_int(d.get("count"))
 
     return {
         "bvid": bvid,
@@ -346,9 +375,27 @@ async def run_once(cfg: Config) -> None:
 
     try:
         payload = await build_payload(cfg)
+        payload_items = payload.get("items")
+        if not isinstance(payload_items, list) or not payload_items:
+            raise RuntimeError("worker produced no video items; keeping previous data")
+
+        # 防止上游临时异常再次用极短列表覆盖上一轮的完整数据。配置主动调小
+        # MAX_ITEMS 时，以新配置为上限，因此不会误判为采集失败。
+        if existing_items:
+            previous_baseline = min(cfg.max_items, len(existing_items))
+            minimum_items = max(1, (previous_baseline + 1) // 2)
+            if len(payload_items) < minimum_items:
+                raise RuntimeError(
+                    f"worker produced only {len(payload_items)} items "
+                    f"(minimum {minimum_items}); keeping previous data"
+                )
+
         payload.pop("error", None)
         _atomic_write_json(out_path, payload)
-        print(f"[worker] updated {out_path} items={len(payload.get('items') or [])} at={payload.get('updated_at')}")
+        print(
+            f"[worker] updated {out_path} "
+            f"items={len(payload_items)} at={payload.get('updated_at')}"
+        )
     except Exception as e:
         print(f"[worker] fetch failed, time={_now_formatted()}, error={e}", file=sys.stderr)
 
